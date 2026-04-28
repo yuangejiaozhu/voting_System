@@ -1,0 +1,29 @@
+{
+  "name": "web3-voting-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@metamask/connect-evm": "^0.9.1",
+    "@semaphore-protocol/group": "^4.14.2",
+    "@semaphore-protocol/identity": "^4.14.2",
+    "@semaphore-protocol/proof": "^4.14.2",
+    "@tanstack/react-query": "^5.100.5",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "viem": "^2.48.4",
+    "wagmi": "^3.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^5",
+    "vite": "^8.0.10"
+  }
+}
