@@ -30,10 +30,13 @@ export interface VotingInterface extends Interface {
       | "createProposal"
       | "getProposal"
       | "getVotes"
+      | "hasVoted"
       | "joinProposal"
       | "proposalCounter"
       | "proposals"
       | "semaphore"
+      | "setSkipProofVerification"
+      | "skipProofVerification"
       | "voted"
       | "votes"
   ): FunctionFragment;
@@ -66,6 +69,10 @@ export interface VotingInterface extends Interface {
     values: [BigNumberish, BigNumberish]
   ): string;
   encodeFunctionData(
+    functionFragment: "hasVoted",
+    values: [BigNumberish, BigNumberish]
+  ): string;
+  encodeFunctionData(
     functionFragment: "joinProposal",
     values: [BigNumberish, BigNumberish]
   ): string;
@@ -78,6 +85,14 @@ export interface VotingInterface extends Interface {
     values: [BigNumberish]
   ): string;
   encodeFunctionData(functionFragment: "semaphore", values?: undefined): string;
+  encodeFunctionData(
+    functionFragment: "setSkipProofVerification",
+    values: [boolean]
+  ): string;
+  encodeFunctionData(
+    functionFragment: "skipProofVerification",
+    values?: undefined
+  ): string;
   encodeFunctionData(
     functionFragment: "voted",
     values: [BigNumberish, BigNumberish]
@@ -97,6 +112,7 @@ export interface VotingInterface extends Interface {
     data: BytesLike
   ): Result;
   decodeFunctionResult(functionFragment: "getVotes", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "hasVoted", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "joinProposal",
     data: BytesLike
@@ -107,6 +123,14 @@ export interface VotingInterface extends Interface {
   ): Result;
   decodeFunctionResult(functionFragment: "proposals", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "semaphore", data: BytesLike): Result;
+  decodeFunctionResult(
+    functionFragment: "setSkipProofVerification",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "skipProofVerification",
+    data: BytesLike
+  ): Result;
   decodeFunctionResult(functionFragment: "voted", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "votes", data: BytesLike): Result;
 }
@@ -227,7 +251,7 @@ export interface Voting extends BaseContract {
     [
       _proposalId: BigNumberish,
       _optionIndex: BigNumberish,
-      _nullifier: BigNumberish,
+      _nullifierHash: BigNumberish,
       _merkleTreeDepth: BigNumberish,
       _merkleTreeRoot: BigNumberish,
       _points: BigNumberish[]
@@ -264,6 +288,12 @@ export interface Voting extends BaseContract {
     "view"
   >;
 
+  hasVoted: TypedContractMethod<
+    [_proposalId: BigNumberish, _nullifierHash: BigNumberish],
+    [boolean],
+    "view"
+  >;
+
   joinProposal: TypedContractMethod<
     [_proposalId: BigNumberish, _identityCommitment: BigNumberish],
     [void],
@@ -289,6 +319,14 @@ export interface Voting extends BaseContract {
 
   semaphore: TypedContractMethod<[], [string], "view">;
 
+  setSkipProofVerification: TypedContractMethod<
+    [_skip: boolean],
+    [void],
+    "nonpayable"
+  >;
+
+  skipProofVerification: TypedContractMethod<[], [boolean], "view">;
+
   voted: TypedContractMethod<
     [arg0: BigNumberish, arg1: BigNumberish],
     [boolean],
@@ -311,7 +349,7 @@ export interface Voting extends BaseContract {
     [
       _proposalId: BigNumberish,
       _optionIndex: BigNumberish,
-      _nullifier: BigNumberish,
+      _nullifierHash: BigNumberish,
       _merkleTreeDepth: BigNumberish,
       _merkleTreeRoot: BigNumberish,
       _points: BigNumberish[]
@@ -351,6 +389,13 @@ export interface Voting extends BaseContract {
     "view"
   >;
   getFunction(
+    nameOrSignature: "hasVoted"
+  ): TypedContractMethod<
+    [_proposalId: BigNumberish, _nullifierHash: BigNumberish],
+    [boolean],
+    "view"
+  >;
+  getFunction(
     nameOrSignature: "joinProposal"
   ): TypedContractMethod<
     [_proposalId: BigNumberish, _identityCommitment: BigNumberish],
@@ -379,6 +424,12 @@ export interface Voting extends BaseContract {
   getFunction(
     nameOrSignature: "semaphore"
   ): TypedContractMethod<[], [string], "view">;
+  getFunction(
+    nameOrSignature: "setSkipProofVerification"
+  ): TypedContractMethod<[_skip: boolean], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "skipProofVerification"
+  ): TypedContractMethod<[], [boolean], "view">;
   getFunction(
     nameOrSignature: "voted"
   ): TypedContractMethod<

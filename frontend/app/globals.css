@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+  /* ── Backgrounds ── */
+  --bg:            #f4f2ee;
+  --surface:       #ffffff;
+  --surface2:      #ece9e3;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* ── Borders ── */
+  --border:        rgba(0,0,0,0.09);
+  --border-md:     rgba(0,0,0,0.15);
+
+  /* ── Text ── */
+  --text:          #1a1915;
+  --muted:         #6b6860;
+  --hint:          #9b9890;
+
+  /* ── Claude Accent — warm terracotta/orange ── */
+  --accent:        #c8631a;
+  --accent-light:  #f5ede4;
+  --accent-text:  #9a4a12;
+
+  /* ── Semantic ── */
+  --success:      #1a7a3c;
+  --success-light: #e6f4ea;
+  --success-text: #145c2c;
+  --danger:       #b03020;
+  --danger-light: #fbeae7;
+  --danger-text:  #8c2518;
+
+  /* ── Neutral tags ── */
+  --tag-bg:       #e8e5de;
+  --tag-text:     #4a4740;
+
+  --nav-h: 58px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg:            #141412;
+    --surface:       #1e1d1a;
+    --surface2:      #272520;
+    --border:        rgba(255,255,255,0.08);
+    --border-md:     rgba(255,255,255,0.14);
+    --text:          #e8e5de;
+    --muted:         #8a8780;
+    --hint:          #5a5855;
+
+    /* Claude dark accent */
+    --accent:        #e07a35;
+    --accent-light:  #2e1a0a;
+    --accent-text:   #f0a570;
+
+    --success:       #4ab870;
+    --success-light:#0d2e1a;
+    --success-text: #7dd99a;
+    --danger:       #e05a45;
+    --danger-light: #2e100c;
+    --danger-text:  #f09080;
+    --tag-bg:       #2a2820;
+    --tag-text:    #b0ada6;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Custom dropdown styling */
+select option {
+  background: #fff !important;
+  color: #1a1915 !important;
+  padding: 0.75rem !important;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background: #f5ede4 !important;
+  color: #c8631a !important;
 }

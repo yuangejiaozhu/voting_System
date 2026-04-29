@@ -9,6 +9,9 @@ contract Voting {
     // Semaphore 合约实例
     Semaphore public semaphore;
     
+    // 是否跳过 ZK 验证（用于测试）
+    bool public skipProofVerification;
+    
     // 提案结构体
     struct Proposal {
         uint256 id;
@@ -39,6 +42,12 @@ contract Voting {
     /// @param _semaphore: 已部署的 Semaphore 合约地址
     constructor(address _semaphore) {
         semaphore = Semaphore(_semaphore);
+    }
+    
+    /// @dev 设置是否跳过 ZK 验证（仅管理员）
+    /// @param _skip: 是否跳过
+    function setSkipProofVerification(bool _skip) external {
+        skipProofVerification = _skip;
     }
     
     /// @dev 创建新提案
@@ -92,14 +101,14 @@ contract Voting {
     /// @dev 投票（使用 zk 证明）
     /// @param _proposalId: 提案 ID
     /// @param _optionIndex: 选择的选项索引（单选）
-    /// @param _nullifier: Semaphore 证明中的 nullifier（防止重复投票）
+    /// @param _nullifierHash: Semaphore 证明中的 nullifier hash（防止重复投票）
     /// @param _merkleTreeDepth: Merkle 树深度
     /// @param _merkleTreeRoot: Merkle 树根
     /// @param _points: zk 证明点 [a, b, c]
     function castVote(
         uint256 _proposalId,
         uint256 _optionIndex,
-        uint256 _nullifier,
+        uint256 _nullifierHash,
         uint256 _merkleTreeDepth,
         uint256 _merkleTreeRoot,
         uint256[8] calldata _points
@@ -108,29 +117,30 @@ contract Voting {
         require(proposal.exists, "Proposal does not exist");
         require(block.timestamp < proposal.endTime, "Voting has ended");
         require(_optionIndex < proposal.options.length, "Invalid option index");
-        // 暂时禁用已投票检查（用前端 localStorage 防重复）
-        // require(!voted[_proposalId][_nullifier], "Already voted");
+        require(!voted[_proposalId][_nullifierHash], "Already voted");
         
         // 构造 Semaphore 证明结构
         ISemaphore.SemaphoreProof memory proof = ISemaphore.SemaphoreProof({
             merkleTreeDepth: _merkleTreeDepth,
             merkleTreeRoot: _merkleTreeRoot,
-            nullifier: _nullifier,
+            nullifier: _nullifierHash,
             message: _optionIndex,  // 投票选项作为 message
             scope: _proposalId,     // 提案 ID 作为 scope（防止跨提案重用证明）
             points: _points
         });
         
-        // 验证 zk 证明（暂时禁用，用于测试）
-        // require(semaphore.verifyProof(proposal.groupId, proof), "Invalid proof");
+        // 验证 zk 证明
+        if (!skipProofVerification) {
+            require(semaphore.verifyProof(proposal.groupId, proof), "Invalid proof");
+        }
         
         // 标记已投票
-        voted[_proposalId][_nullifier] = true;
+        voted[_proposalId][_nullifierHash] = true;
         
         // 记录投票
         votes[_proposalId][_optionIndex]++;
         
-        emit VoteCast(_proposalId, _optionIndex, _nullifier);
+        emit VoteCast(_proposalId, _optionIndex, _nullifierHash);
     }
     
     /// @dev 获取提案信息
@@ -166,5 +176,10 @@ contract Voting {
     /// @dev 获取某选项的票数
     function getVotes(uint256 _proposalId, uint256 _optionIndex) external view returns (uint256) {
         return votes[_proposalId][_optionIndex];
+    }
+    
+    /// @dev 检查是否已投票
+    function hasVoted(uint256 _proposalId, uint256 _nullifierHash) external view returns (bool) {
+        return voted[_proposalId][_nullifierHash];
     }
 }

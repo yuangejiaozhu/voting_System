@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 
-const VOTING_ADDRESS = '0x4926480D2Fe02cEc8dbF3E9D98b3c2eF0A3a9278'
+const VOTING_ADDRESS = '0x6A2A8a76eCb4944A989E2F188A08110B5F670d29'
 const VOTING_ABI = [
   "function getProposal(uint256) view returns (uint256 id, address creator, string description, string[] options, uint256 endTime, uint256 groupId, uint256 voteCount)",
   "function getVotes(uint256 proposalId, uint256 optionIndex) view returns (uint256)"
@@ -14,6 +14,10 @@ export default function Results({ proposalId }: { proposalId: number }) {
 
   useEffect(() => {
     fetchResults()
+    
+    // 每3秒自动刷新
+    const interval = setInterval(fetchResults, 3000)
+    return () => clearInterval(interval)
   }, [proposalId])
 
   const fetchResults = async () => {
@@ -45,8 +49,8 @@ export default function Results({ proposalId }: { proposalId: number }) {
     }
   }
 
-  if (loading) return <p style={{ padding: '2rem' }}>加载中...</p>
-  if (!proposal) return <p>提案不存在</p>
+  if (loading) return <p style={{ padding: '2rem' }}>Loading...</p>
+  if (!proposal) return <p>Proposal not found</p>
 
   const total = votes.reduce((a, v) => a + v.count, 0)
 
@@ -64,7 +68,7 @@ export default function Results({ proposalId }: { proposalId: number }) {
               <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#f3f4f6', width: pct + '%' }} />
               <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between' }}>
                 <span>{v.option}</span>
-                <span style={{ color: '#6b7280' }}>{v.count} 票 ({pct}%)</span>
+                <span style={{ color: '#6b6860' }}>{v.count} votes ({pct}%)</span>
               </div>
             </div>
           )
@@ -73,7 +77,7 @@ export default function Results({ proposalId }: { proposalId: number }) {
 
       <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem' }}>
         <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-          总票数: {total} | 结束时间: {new Date(proposal.endTime * 1000).toLocaleString()}
+          Total votes: {total} | Ends: {new Date(proposal.endTime * 1000).toLocaleString()}
         </p>
       </div>
     </div>
