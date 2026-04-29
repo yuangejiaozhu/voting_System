@@ -45,36 +45,35 @@ export default function Results({ proposalId }: { proposalId: number }) {
     }
   }
 
-  if (loading) return <p style={{ padding: '2rem' }}>加载中...</p>
+  if (loading) return <p className="empty">加载中...</p>
   if (!proposal) return <p>提案不存在</p>
 
   const total = votes.reduce((a, v) => a + v.count, 0)
 
   return (
-    <div>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
-        #{proposal.id}: {proposal.description}
-      </h2>
+    <div className="sidebar-card">
+      <h4 className="sidebar-card-h4">投票结果</h4>
       
-      <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
-        {votes.map((v, i) => {
-          const pct = total > 0 ? Math.round(v.count / total * 100) : 0
-          return (
-            <div key={i} style={{ position: 'relative', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#f3f4f6', width: pct + '%' }} />
-              <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between' }}>
-                <span>{v.option}</span>
-                <span style={{ color: '#6b7280' }}>{v.count} 票 ({pct}%)</span>
-              </div>
+      {votes.map((v, i) => {
+        const pct = total > 0 ? Math.round(v.count / total * 100) : 0
+        return (
+          <div key={i} className="result-row">
+            <div className="result-bar" style={{ width: pct + '%' }} />
+            <div className="result-content">
+              <span className="result-label">{v.option}</span>
+              <span className="result-pct">{v.count} 票 ({pct}%)</span>
             </div>
-          )
-        })}
+          </div>
+        )
+      })}
+      
+      <div className="sidebar-stat">
+        <span>总票数</span>
+        <span className="sidebar-stat-val">{total}</span>
       </div>
-
-      <div style={{ padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.5rem' }}>
-        <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
-          总票数: {total} | 结束时间: {new Date(proposal.endTime * 1000).toLocaleString()}
-        </p>
+      <div className="sidebar-stat">
+        <span>结束时间</span>
+        <span className="sidebar-stat-val">{new Date(proposal.endTime * 1000).toLocaleDateString()}</span>
       </div>
     </div>
   )

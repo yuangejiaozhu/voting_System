@@ -120,65 +120,52 @@ export default function CreateProposal({ onSuccess }: { onSuccess: () => void })
   }
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
+    <div className="create-wrap">
       {error && (
-        <div style={{
-          padding: '0.75rem',
-          backgroundColor: error.includes('成功') ? '#dcfce7' : '#fee2e2',
-          color: error.includes('成功') ? '#166534' : '#991b1b',
-          borderRadius: '0.25rem'
-        }}>
+        <div className={`toast ${error.includes('成功') ? 'success' : 'error'}`}>
           {error}
         </div>
       )}
-      <div>
-        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>提案描述</label>
+      <div className="form-section">
+        <label className="form-label">提案描述</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          style={{ width: '100%', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+          className="form-textarea"
           rows={3}
         />
       </div>
-      <div>
-        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>选项（已添加 {options.length} 个）</label>
-        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+      <div className="form-section">
+        <label className="form-label">选项（已添加 {options.length} 个）</label>
+        <div className="answer-row">
           <input
             value={option}
             onChange={(e) => setOption(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && addOption()}
-            style={{ flex: '1', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+            className="form-input"
             placeholder="输入选项后按Enter或点击添加"
           />
-          <button onClick={addOption} style={{ backgroundColor: '#3b82f6', color: 'white', padding: '0.5rem 1rem', borderRadius: '0.5rem' }}>
+          <button onClick={addOption} className="btn btn-sm">
             添加
           </button>
         </div>
         {options.map((opt, i) => (
-          <div key={i} style={{ padding: '0.5rem', backgroundColor: '#f9fafb', borderRadius: '0.25rem' }}>{opt}</div>
+          <div key={i} className="option-tag">{opt}</div>
         ))}
       </div>
-      <div>
-        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>投票期限（秒）</label>
+      <div className="form-section">
+        <label className="form-label">投票期限（秒）</label>
         <input
           type="number"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
-          style={{ width: '100%', padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.5rem' }}
+          className="form-input"
         />
       </div>
       <button
         onClick={createProposal}
         disabled={isPending}
-        style={{
-          width: '100%',
-          backgroundColor: isPending ? '#9ca3af' : '#22c55e',
-          color: 'white',
-          padding: '0.75rem',
-          borderRadius: '0.25rem',
-          border: 'none',
-          cursor: isPending ? 'not-allowed' : 'pointer'
-        }}
+        className="btn btn-primary"
       >
         {isPending ? '交易中...' : '创建提案'}
       </button>

@@ -146,26 +146,26 @@ export default function Vote({ proposalId }: { proposalId: number }) {
     setIsLoading(false)
   }
 
-  if (!proposal) return <p style={{ padding: '2rem' }}>加载中...</p>
+  if (!proposal) return <p className="empty">加载中...</p>
 
   const isEnded = Date.now() / 1000 > proposal.endTime
 
   return (
-    <div style={{ display: 'grid', gap: '1rem' }}>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>#{proposal.id}: {proposal.description}</h2>
+    <div className="vote-section">
+      <h2 className="vote-section-h3">#{proposal.id}: {proposal.description}</h2>
       
       {proposal.votes && (
-        <div style={{ display: 'grid', gap: '0.5rem' }}>
-          <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>实时票数：</p>
+        <div className="vote-options">
+          <p className="vote-section-h3">实时票数：</p>
           {proposal.votes.map((v: any, i: number) => {
             const total = proposal.votes.reduce((a: number, b: any) => a + b.count, 0)
             const pct = total > 0 ? Math.round(v.count / total * 100) : 0
             return (
-              <div key={i} style={{ position: 'relative', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#f3f4f6', width: pct + '%' }} />
-                <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{v.option}</span>
-                  <span style={{ color: '#6b7280' }}>{v.count} 票 ({pct}%)</span>
+              <div key={i} className="vote-option">
+                <div className="vo-bar" style={{ width: pct + '%' }} />
+                <div className="vo-content">
+                  <span className="vo-label">{v.option}</span>
+                  <span className="vo-pct">{v.count} 票 ({pct}%)</span>
                 </div>
               </div>
             )
@@ -174,56 +174,47 @@ export default function Vote({ proposalId }: { proposalId: number }) {
       )}
 
       {message && (
-        <div style={{
-          padding: '0.75rem',
-          borderRadius: '0.25rem',
-          backgroundColor: message.includes('成功') ? '#dcfce7' : '#fee2e2',
-          color: message.includes('成功') ? '#166534' : '#991b1b'
-        }}>
-          {message}
+        <div className={`toast ${message.includes('成功') ? 'toast-success' : 'toast-error'}`}>
+          <span className="toast-icon">{message.includes('成功') ? '✓' : '✕'}</span>
+          <span>{message}</span>
         </div>
       )}
 
       {hasVoted ? (
         <p style={{ color: '#16a34a', fontWeight: 500 }}>✓ 您已完成投票</p>
       ) : isEnded ? (
-        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>投票已结束</p>
+        <p className="vote-hint">投票已结束</p>
       ) : (
         <>
-          <div style={{ display: 'grid', gap: '0.5rem' }}>
-            <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>选择选项：</p>
+          <div className="vote-options">
+            <p className="vote-section-h3">选择选项：</p>
             {proposal.options.map((opt: string, i: number) => (
               <div
                 key={i}
                 onClick={() => setSelectedOption(i)}
-                style={{
-                  padding: '0.75rem',
-                  border: '1px solid #d1d5db',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  backgroundColor: selectedOption === i ? '#eff6ff' : 'white'
-                }}
+                className={`vote-option ${selectedOption === i ? 'selected' : ''}`}
               >
-                {opt}
+                <div className="vo-radio">
+                  <div className="vo-dot"></div>
+                </div>
+                <span className="vo-label">{opt}</span>
               </div>
             ))}
           </div>
 
-          <button
-            onClick={handleVote}
-            disabled={selectedOption === null || isLoading || !identity}
-            style={{
-              width: '100%',
-              backgroundColor: selectedOption === null ? '#9ca3af' : '#22c55e',
-              color: 'white',
-              padding: '0.75rem',
-              borderRadius: '0.25rem',
-              border: 'none',
-              cursor: selectedOption === null ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isLoading ? '处理中...' : '提交投票（简化版）'}
-          </button>
+          <div className="vote-actions">
+            <div className="vote-hint">
+              <span>ⓘ</span>
+              <span>连接钱包以投票</span>
+            </div>
+            <button
+              onClick={handleVote}
+              disabled={selectedOption === null || isLoading || !identity}
+              className="btn btn-primary"
+            >
+              {isLoading ? '处理中...' : '提交匿名投票（简化版）'}
+            </button>
+          </div>
         </>
       )}
     </div>
