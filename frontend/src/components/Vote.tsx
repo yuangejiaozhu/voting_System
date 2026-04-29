@@ -1,99 +1,153 @@
 import { useState, useEffect } from 'react'
+import { ethers } from 'ethers'
+import { Identity } from '@semaphore-protocol/identity'
 
-const VOTING_ADDRESS = '0xD7075bf25F7650874b4f9bE3ee840cbbD4504Bf4'
+const VOTING_ADDRESS = '0x4926480D2Fe02cEc8dbF3E9D98b3c2eF0A3a9278'
+const VOTING_ABI = [
+  "function getProposal(uint256) view returns (uint256 id, address creator, string description, string[] options, uint256 endTime, uint256 groupId, uint256 voteCount)",
+  "function joinProposal(uint256 proposalId, uint256 identityCommitment) external",
+  "function castVote(uint256 proposalId, uint256 optionIndex, uint256 nullifier, uint256 merkleTreeDepth, uint256 merkleTreeRoot, uint256[8] calldata points) external",
+  "function getVotes(uint256 proposalId, uint256 optionIndex) view returns (uint256)"
+]
 
 export default function Vote({ proposalId }: { proposalId: number }) {
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
-  const [hasJoined, setHasJoined] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [proposal, setProposal] = useState<any>(null)
+  const [identity, setIdentity] = useState<Identity | null>(null)
+  const [hasVoted, setHasVoted] = useState(false)
 
+  // 初始化身份
   useEffect(() => {
-    // 模拟提案数据
-    setProposal({
-      id: proposalId,
-      description: '提案 #' + proposalId,
-      options: ['支持', '反对', '弃权']
-    })
+    let stored = localStorage.getItem('voting_identity')
+    if (!stored) {
+      const newIdentity = new Identity()
+      localStorage.setItem('voting_identity', newIdentity.toString())
+      setIdentity(newIdentity)
+    } else {
+      try {
+        const id = Identity.import(stored)
+        setIdentity(id)
+      } catch (e) {
+        const newIdentity = new Identity()
+        localStorage.setItem('voting_identity', newIdentity.toString())
+        setIdentity(newIdentity)
+      }
+    }
+  }, [])
+
+  // 获取提案信息
+  useEffect(() => {
+    fetchProposal()
   }, [proposalId])
 
-  const handleJoinGroup = async () => {
-    if (typeof window.ethereum === 'undefined') {
+  const fetchProposal = async () => {
+    if (!window.ethereum) {
       setMessage('请安装 MetaMask！')
       return
     }
-
-    setIsLoading(true)
     try {
-      // 简化：只发送加入请求，不生成真实证明
-      await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: (await window.ethereum.request({ method: 'eth_accounts' }))[0],
-          to: VOTING_ADDRESS,
-          data: '0xa6d4b84e' + // joinProposal 函数选择器
-                proposalId.toString(16).padStart(64, '0') +
-                '1'.padStart(64, '0') // 简化的 commitment
-        }]
-      })
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const contract = new ethers.Contract(VOTING_ADDRESS, VOTING_ABI, provider)
+      const result = await contract.getProposal(proposalId)
       
-      setHasJoined(true)
-      setMessage('成功加入投票组！')
-    } catch (error: any) {
-      setMessage('加入失败: ' + error.message)
+      setProposal({
+        id: Number(result[0]),
+        creator: result[1],
+        description: result[2],
+        options: result[3],
+        endTime: Number(result[4]),
+        groupId: Number(result[5]),
+        voteCount: Number(result[6])
+      })
+
+      // 获取各选项票数
+      const votes = []
+      for (let i = 0; i < result[3].length; i++) {
+        const voteCount = await contract.getVotes(proposalId, i)
+        votes.push({ option: result[3][i], count: Number(voteCount) })
+      }
+      setProposal((prev: any) => ({ ...prev, votes }))
+    } catch (err: any) {
+      console.error('获取提案失败:', err)
+      setMessage('获取提案失败: ' + err.message)
     }
-    setIsLoading(false)
   }
 
   const handleVote = async () => {
-    if (selectedOption === null) return
+    if (selectedOption === null || !identity || !proposal) return
     
     setIsLoading(true)
+    setMessage('')
+    
     try {
-      // 简化投票：不生成真实 zk 证明，只测试交易流程
-      await window.ethereum.request({
-        method: 'eth_sendTransaction',
-        params: [{
-          from: (await window.ethereum.request({ method: 'eth_accounts' }))[0],
-          to: VOTING_ADDRESS,
-          data: '0x5a5f755a' + // castVote 函数选择器
-                proposalId.toString(16).padStart(64, '0') +
-                selectedOption.toString(16).padStart(64, '0') +
-                '0'.padStart(64, '0') // 简化的 nullifier
-        }]
-      })
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const signer = await provider.getSigner()
+      const contract = new ethers.Contract(VOTING_ADDRESS, VOTING_ABI, signer)
 
-      setMessage('投票成功！（模拟zk证明）')
+      // 1. 加入投票组
+      setMessage('正在加入投票组...')
+      try {
+        const tx1 = await contract.joinProposal(proposalId, identity.commitment.toString())
+        await tx1.wait()
+        console.log('已加入投票组')
+      } catch (e: any) {
+        if (!e.message.includes('already')) {
+          console.log('加入组:', e.message)
+        }
+      }
+
+      // 2. 提交投票（简化版，跳过 ZK 证明）
+      setMessage('正在提交投票...')
+      
+      const tx2 = await contract.castVote(
+        proposalId,
+        selectedOption,
+        Math.floor(Math.random() * 1000000), // nullifier
+        3, // merkleTreeDepth
+        12345, // merkleTreeRoot
+        [1, 2, 3, 4, 5, 6, 7, 8] // points
+      )
+      
+      await tx2.wait()
+      
+      setHasVoted(true)
+      setMessage('投票成功！（简化版，已跳过 ZK 证明）')
+      fetchProposal() // 刷新票数
     } catch (error: any) {
-      setMessage('投票失败: ' + error.message)
+      console.error('投票失败:', error)
+      setMessage('投票失败: ' + (error.reason || error.message))
     }
     setIsLoading(false)
   }
 
   if (!proposal) return <p style={{ padding: '2rem' }}>加载中...</p>
 
+  const isEnded = Date.now() / 1000 > proposal.endTime
+
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
-      <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>{proposal.description}</h2>
+      <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>#{proposal.id}: {proposal.description}</h2>
       
-      <div style={{ display: 'grid', gap: '0.5rem' }}>
-        {proposal.options.map((opt: string, i: number) => (
-          <div
-            key={i}
-            onClick={() => setSelectedOption(i)}
-            style={{
-              padding: '0.75rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.5rem',
-              cursor: 'pointer',
-              backgroundColor: selectedOption === i ? '#eff6ff' : 'white'
-            }}
-          >
-            {opt}
-          </div>
-        ))}
-      </div>
+      {proposal.votes && (
+        <div style={{ display: 'grid', gap: '0.5rem' }}>
+          <p style={{ fontSize: '0.875rem', fontWeight: '500', color: '#6b7280' }}>实时票数：</p>
+          {proposal.votes.map((v: any, i: number) => {
+            const total = proposal.votes.reduce((a: number, b: any) => a + b.count, 0)
+            const pct = total > 0 ? Math.round(v.count / total * 100) : 0
+            return (
+              <div key={i} style={{ position: 'relative', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#f3f4f6', width: pct + '%', zIndex: 0 }} />
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>{v.option}</span>
+                  <span style={{ color: '#6b7280' }}>{v.count} 票 ({pct}%)</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {message && (
         <div style={{
@@ -106,38 +160,47 @@ export default function Vote({ proposalId }: { proposalId: number }) {
         </div>
       )}
 
-      {!hasJoined ? (
-        <button
-          onClick={handleJoinGroup}
-          disabled={isLoading}
-          style={{
-            width: '100%',
-            backgroundColor: isLoading ? '#9ca3af' : '#3b82f6',
-            color: 'white',
-            padding: '0.75rem',
-            borderRadius: '0.25rem',
-            border: 'none',
-            cursor: isLoading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isLoading ? '加入中...' : '加入投票组'}
-        </button>
+      {hasVoted ? (
+        <p style={{ color: '#16a34a', fontWeight: 500 }}>✓ 您已完成投票</p>
+      ) : isEnded ? (
+        <p style={{ color: '#6b7280', fontSize: '0.875rem' }}>投票已结束</p>
       ) : (
-        <button
-          onClick={handleVote}
-          disabled={selectedOption === null || isLoading}
-          style={{
-            width: '100%',
-            backgroundColor: selectedOption === null ? '#9ca3af' : '#22c55e',
-            color: 'white',
-            padding: '0.75rem',
-            borderRadius: '0.25rem',
-            border: 'none',
-            cursor: selectedOption === null ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isLoading ? '投票中...' : '提交匿名投票'}
-        </button>
+        <>
+          <div style={{ display: 'grid', gap: '0.5rem' }}>
+            <p style={{ fontSize: '0.875rem', fontWeight: '500' }}>选择选项：</p>
+            {proposal.options.map((opt: string, i: number) => (
+              <div
+                key={i}
+                onClick={() => setSelectedOption(i)}
+                style={{
+                  padding: '0.75rem',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '0.5rem',
+                  cursor: 'pointer',
+                  backgroundColor: selectedOption === i ? '#eff6ff' : 'white'
+                }}
+              >
+                {opt}
+              </div>
+            ))}
+          </div>
+
+          <button
+            onClick={handleVote}
+            disabled={selectedOption === null || isLoading || !identity}
+            style={{
+              width: '100%',
+              backgroundColor: selectedOption === null ? '#9ca3af' : '#22c55e',
+              color: 'white',
+              padding: '0.75rem',
+              borderRadius: '0.25rem',
+              border: 'none',
+              cursor: selectedOption === null ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {isLoading ? '处理中...' : '提交投票（简化版）'}
+          </button>
+        </>
       )}
     </div>
   )
