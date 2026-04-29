@@ -214,7 +214,8 @@ function App() {
               cursor: 'pointer',
               fontWeight: 500,
               fontSize: '0.875rem',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              marginBottom: '1rem'
             }}>
             ← Home
           </button>
@@ -233,7 +234,8 @@ function App() {
               cursor: 'pointer',
               fontWeight: 500,
               fontSize: '0.875rem',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              marginBottom: '1rem'
             }}>
             ← Home
           </button>
@@ -252,7 +254,8 @@ function App() {
               cursor: 'pointer',
               fontWeight: 500,
               fontSize: '0.875rem',
-              transition: 'all 0.2s ease'
+              transition: 'all 0.2s ease',
+              marginBottom: '1rem'
             }}>
             ← Home
           </button>
