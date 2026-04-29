@@ -16,8 +16,33 @@ function App() {
   const [log, setLog] = useState('')
   const [page, setPage] = useState<'home' | 'create' | 'vote' | 'results'>('home')
   const [proposalId, setProposalId] = useState<number>(0)
-  const [proposals, setProposals] = useState<Array<{id: number, description: string}>>([])
+  const [proposals, setProposals] = useState<Array<{id: number, description: string, hasVoted?: boolean}>>([])
   const [loading, setLoading] = useState(false)
+
+  // 自动恢复钱包连接
+  useEffect(() => {
+    if (typeof window.ethereum !== 'undefined') {
+      window.ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+        if (accounts.length > 0) {
+          setAddress(accounts[0])
+          setIsConnected(true)
+          setLog('连接已恢复')
+        }
+      }).catch(() => {})
+      
+      // 监听账户变化
+      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+        if (accounts.length === 0) {
+          setAddress('')
+          setIsConnected(false)
+          setLog('已断开')
+        } else {
+          setAddress(accounts[0])
+          setIsConnected(true)
+        }
+      })
+    }
+  }, [])
 
   const fetchProposals = async () => {
     if (!window.ethereum) return

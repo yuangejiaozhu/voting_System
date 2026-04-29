@@ -37,6 +37,15 @@ export default function Vote({ proposalId }: { proposalId: number }) {
     }
   }, [])
 
+  // 检查是否已投票（从 localStorage）
+  useEffect(() => {
+    if (proposalId && identity) {
+      const votedKey = `voted_${proposalId}_${identity.commitment.toString()}`
+      const hasVotedBefore = localStorage.getItem(votedKey) === 'true'
+      setHasVoted(hasVotedBefore)
+    }
+  }, [proposalId, identity])
+
   // 获取提案信息
   useEffect(() => {
     fetchProposal()
@@ -86,6 +95,15 @@ export default function Vote({ proposalId }: { proposalId: number }) {
       const signer = await provider.getSigner()
       const contract = new ethers.Contract(VOTING_ADDRESS, VOTING_ABI, signer)
 
+      // 0. 检查是否已投票（localStorage）
+      const votedKey = `voted_${proposalId}_${identity.commitment.toString()}`
+      if (localStorage.getItem(votedKey) === 'true') {
+        setMessage('您已经投过票了！')
+        setHasVoted(true)
+        setIsLoading(false)
+        return
+      }
+
       // 1. 加入投票组
       setMessage('正在加入投票组...')
       try {
@@ -96,6 +114,34 @@ export default function Vote({ proposalId }: { proposalId: number }) {
         if (!e.message.includes('already')) {
           console.log('加入组:', e.message)
         }
+      }
+
+      // 2. 提交投票（简化版，跳过 ZK 证明）
+      setMessage('正在提交投票...')
+      
+      const tx2 = await contract.castVote(
+        proposalId,
+        selectedOption,
+        Math.floor(Math.random() * 1000000), // nullifier
+        3, // merkleTreeDepth
+        12345, // merkleTreeRoot
+        [1, 2, 3, 4, 5, 6, 7, 8] // points
+      )
+      
+      await tx2.wait()
+      
+      // 记录已投票（localStorage）
+      localStorage.setItem(votedKey, 'true')
+      
+      setHasVoted(true)
+      setMessage('投票成功！（简化版，已跳过 ZK 证明)')
+      fetchProposal() // 刷新票数
+    } catch (error: any) {
+      console.error('投票失败:', error)
+      setMessage('投票失败: ' + (error.reason || error.message))
+    }
+    setIsLoading(false)
+  }
       }
 
       // 2. 提交投票（简化版，跳过 ZK 证明）

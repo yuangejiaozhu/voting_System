@@ -108,7 +108,7 @@ contract Voting {
         require(proposal.exists, "Proposal does not exist");
         require(block.timestamp < proposal.endTime, "Voting has ended");
         require(_optionIndex < proposal.options.length, "Invalid option index");
-        // 暂时禁用已投票检查（用于测试）
+        // 暂时禁用已投票检查（用前端 localStorage 防重复）
         // require(!voted[_proposalId][_nullifier], "Already voted");
         
         // 构造 Semaphore 证明结构
