@@ -108,8 +108,8 @@ contract Voting {
         require(proposal.exists, "Proposal does not exist");
         require(block.timestamp < proposal.endTime, "Voting has ended");
         require(_optionIndex < proposal.options.length, "Invalid option index");
-        // 暂时禁用已投票检查（用前端 localStorage 防重复）
-        // require(!voted[_proposalId][_nullifier], "Already voted");
+        // 检查是否已投票（用 nullifier 防止重复，nullifier 应该是 identity commitment）
+        require(!voted[_proposalId][_nullifier], "Already voted");
         
         // 构造 Semaphore 证明结构
         ISemaphore.SemaphoreProof memory proof = ISemaphore.SemaphoreProof({

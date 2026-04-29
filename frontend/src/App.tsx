@@ -4,10 +4,10 @@ import CreateProposal from './components/CreateProposal'
 import Vote from './components/Vote'
 import Results from './components/Results'
 
-const VOTING_ADDRESS = '0x4926480D2Fe02cEc8dbF3E9D98b3c2eF0A3a9278'
+const VOTING_ADDRESS = '0x81620fF38807e55c59E7d4ccC18657F8013F08fA'
 const VOTING_ABI = [
   "function proposalCounter() view returns (uint256)",
-  "function getProposal(uint256) view returns (uint256, address, string, string[], uint256, uint256, uint256)"
+  "function getProposal(uint256) view returns (uint256, address, string, string[], uint256, uint256)"
 ]
 
 function App() {
@@ -18,31 +18,6 @@ function App() {
   const [proposalId, setProposalId] = useState<number>(0)
   const [proposals, setProposals] = useState<Array<{id: number, description: string, hasVoted?: boolean}>>([])
   const [loading, setLoading] = useState(false)
-
-  // 自动恢复钱包连接
-  useEffect(() => {
-    if (typeof window.ethereum !== 'undefined') {
-      window.ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
-        if (accounts.length > 0) {
-          setAddress(accounts[0])
-          setIsConnected(true)
-          setLog('连接已恢复')
-        }
-      }).catch(() => {})
-      
-      // 监听账户变化
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
-        if (accounts.length === 0) {
-          setAddress('')
-          setIsConnected(false)
-          setLog('已断开')
-        } else {
-          setAddress(accounts[0])
-          setIsConnected(true)
-        }
-      })
-    }
-  }, [])
 
   const fetchProposals = async () => {
     if (!window.ethereum) return
@@ -67,6 +42,30 @@ function App() {
       setLoading(false)
     }
   }
+
+  // 自动恢复钱包连接
+  useEffect(() => {
+    if (typeof window.ethereum !== 'undefined') {
+      window.ethereum.request({ method: 'eth_accounts' }).then((accounts: string[]) => {
+        if (accounts.length > 0) {
+          setAddress(accounts[0])
+          setIsConnected(true)
+          setLog('连接已恢复')
+        }
+      }).catch(() => {})
+      
+      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+        if (accounts.length === 0) {
+          setAddress('')
+          setIsConnected(false)
+          setLog('已断开')
+        } else {
+          setAddress(accounts[0])
+          setIsConnected(true)
+        }
+      })
+    }
+  }, [])
 
   useEffect(() => {
     if (isConnected) {
@@ -97,53 +96,45 @@ function App() {
   }
 
   return (
-    <div style={{ padding: '2rem', maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>Web3 匿名投票系统</h1>
-        <div>
-          {isConnected ? (
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.875rem', color: '#4b5563' }}>
-                {address?.slice(0, 6)}...{address?.slice(-4)}
-              </span>
-              <button 
-                onClick={disconnect} 
-                style={{ 
-                  backgroundColor: '#ef4444', 
-                  color: 'white', 
-                  padding: '0.5rem 1rem', 
-                  borderRadius: '0.25rem',
-                  border: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                断开连接
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={connectMetaMask}
-              style={{ 
-                backgroundColor: '#3b82f6', 
-                color: 'white', 
-                padding: '0.5rem 1rem', 
-                borderRadius: '0.25rem',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              连接 MetaMask
-            </button>
-          )}
+    <div style={{ maxWidth: '900px', margin: '0 auto', padding: '0 2rem' }}>
+      <nav>
+        <a href="#" className="nav-brand" onClick={(e) => { e.preventDefault(); setPage('home') }}>
+          <div className="nav-brand-dot"></div>
+          VoteChain
+        </a>
+        <ul className="nav-links">
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage('home') }} className={page === 'home' ? 'active' : ''}>Proposals</a></li>
+          <li><a href="#" onClick={(e) => { e.preventDefault(); setPage('create') }} className={page === 'create' ? 'active' : ''}>Create</a></li>
+        </ul>
+        <div className="nav-right">
+          <span className="wallet-addr" id="wallet-display" style={{ display: isConnected ? '' : 'none' }}>
+            {address?.slice(0, 6)}...{address?.slice(-4)}
+          </span>
+          <button 
+            id="disconnect-btn" 
+            onClick={disconnect} 
+            className="btn"
+            style={{ display: isConnected ? '' : 'none' }}
+          >
+            断开连接
+          </button>
+          <button
+            id="connect-btn"
+            onClick={connectMetaMask}
+            className="btn btn-primary"
+            style={{ display: !isConnected ? '' : 'none' }}
+          >
+            连接 MetaMask
+          </button>
         </div>
-      </div>
+      </nav>
 
       {log && (
-        <div style={{ 
-          backgroundColor: log.includes('成功') ? '#dcfce7' : '#fee2e2', 
-          color: log.includes('成功') ? '#166534' : '#991b1b',
-          padding: '0.5rem', 
-          borderRadius: '0.25rem', 
+        <div style={{
+          padding: '0.75rem',
+          backgroundColor: log.includes('成功') || log.includes('恢复') ? 'var(--success-light)' : 'var(--danger-light)', 
+          color: log.includes('成功') || log.includes('恢复') ? 'var(--success-text)' : 'var(--danger-text)',
+          borderRadius: '0.25rem',
           marginBottom: '1rem',
           fontSize: '0.875rem'
         }}>
@@ -152,111 +143,120 @@ function App() {
       )}
 
       {page === 'home' && (
-        <div style={{ display: 'grid', gap: '1rem' }}>
-          <button
-            onClick={() => setPage('create')}
-            style={{ 
-              backgroundColor: '#22c55e', 
-              color: 'white', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '0.25rem',
-              border: 'none',
-              cursor: 'pointer',
-              width: 'fit-content'
-            }}
-          >
-            创建新提案
-          </button>
+        <div>
+          <div className="hero">
+            <p className="hero-eyebrow">Decentralized governance</p>
+            <h1 className="hero-h1">
+              Vote on what<br/><em>matters most.</em>
+            </h1>
+            <p className="hero-sub">
+              Create proposals, cast your vote with your wallet, and shape the future of your community — transparently on-chain.
+            </p>
+            <div className="hero-actions">
+              <button
+                onClick={() => setPage('create')}
+                className="btn btn-primary"
+              >
+                创建新提案
+              </button>
+              <button
+                onClick={() => document.getElementById('proposals-section')?.scrollIntoView({behavior:'smooth'})}
+                className="btn"
+              >
+                浏览提案
+              </button>
+            </div>
+          </div>
 
-          <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: '600' }}>提案列表</h2>
-              <button onClick={fetchProposals} disabled={loading} style={{ fontSize: '0.75rem', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer' }}>
-                {loading ? '刷新中...' : '刷新'}
+          <div className="stats-row">
+            <div className="stat-card">
+              <div className="stat-val">{proposals.length}</div>
+              <div className="stat-lbl">Total proposals</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-val">--</div>
+              <div className="stat-lbl">Open</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-val">--</div>
+              <div className="stat-lbl">Total votes cast</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-val">--</div>
+              <div className="stat-lbl">Unique voters</div>
+            </div>
+          </div>
+
+          <div id="proposals-section">
+            <div className="section-head">
+              <div>
+                <p className="section-eyebrow">All proposals</p>
+                <h2>提案列表</h2>
+              </div>
+              <button onClick={fetchProposals} disabled={loading} className="btn btn-sm">
+                {loading ? '刷新中...' : 'Refresh'}
               </button>
             </div>
             {proposals.length === 0 ? (
-              <p style={{ color: '#6b7280' }}>{loading ? '加载中...' : '暂无提案'}</p>
+              <p className="empty">{loading ? '加载中...' : '暂无提案'}</p>
             ) : (
-              <div style={{ display: 'grid', gap: '0.5rem' }}>
+              <div className="proposals-grid">
                 {proposals.map(p => (
-                  <div key={p.id} style={{ padding: '0.75rem', backgroundColor: '#f9fafb', borderRadius: '0.25rem', cursor: 'pointer' }} onClick={() => { setProposalId(p.id); setPage('vote') }}>
-                    <div style={{ fontWeight: '500' }}>#{p.id}: {p.description}</div>
-                  </div>
+                  <a 
+                    key={p.id} 
+                    className={`proposal-card ${p.hasVoted ? 'voted' : ''}`}
+                    onClick={() => { setProposalId(p.id); setPage('vote') }}
+                  >
+                    <div className="card-head">
+                      <div>
+                        <span className="card-title">#{p.id}: {p.description}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '5px' }}>
+                        {p.hasVoted && (
+                          <span className="pill pill-voted">已投票</span>
+                        )}
+                      </div>
+                    </div>
+                  </a>
                 ))}
               </div>
             )}
-            <p style={{ fontSize: '0.875rem', color: '#9ca3af', marginTop: '0.5rem' }}>
-              合约地址: 0x4926480D2Fe02cEc8dbF3E9D98b3c2eF0A3a9278
+            <p style={{ fontSize: '0.875rem', color: 'var(--tag-text)', marginTop: '0.5rem' }}>
+              合约地址: 0x81620fF38807e55c59E7d4ccC18657F8013F08fA
             </p>
-          
-            <div style={{ marginTop: '1rem', padding: '1rem', backgroundColor: '#f9fafb', borderRadius: '0.25rem' }}>
-              <p style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>测试投票（手动输入提案ID）:</p>
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <input 
-                  type="number" 
-                  value={proposalId}
-                  onChange={(e) => setProposalId(Number(e.target.value))}
-                  style={{ padding: '0.5rem', border: '1px solid #d1d5db', borderRadius: '0.25rem' }}
-                />
-                <button
-                  onClick={() => setPage('vote')}
-                  style={{ 
-                    backgroundColor: '#3b82f6', 
-                    color: 'white', 
-                    padding: '0.5rem 1rem', 
-                    borderRadius: '0.25rem',
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  投票
-                </button>
-                <button
-                  onClick={() => setPage('results')}
-                  style={{ 
-                    backgroundColor: '#8b5cf6', 
-                    color: 'white', 
-                    padding: '0.5rem 1rem', 
-                    borderRadius: '0.25rem',
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  结果
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
 
       {page === 'create' && (
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <button onClick={() => setPage('home')} style={{ color: '#3b82f6', marginBottom: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <div className="create-wrap">
+          <button onClick={() => setPage('home')} className="detail-back">
             ← 返回首页
           </button>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>创建提案</h2>
+          <div style={{ marginBottom: '2rem' }}>
+            <p className="section-eyebrow">New proposal</p>
+            <h1 style={{ fontFamily: "'Crimson Pro', serif", fontSize: '2rem', fontWeight: 300 }}>创建提案</h1>
+          </div>
           <CreateProposal onSuccess={() => setPage('home')} />
         </div>
       )}
 
       {page === 'vote' && (
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <button onClick={() => setPage('home')} style={{ color: '#3b82f6', marginBottom: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <div style={{ backgroundColor: 'var(--surface)', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <button onClick={() => setPage('home')} className="detail-back">
             ← 返回首页
           </button>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>投票 - 提案 #{proposalId}</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>投票 - 提案 #{proposalId}</h2>
           <Vote proposalId={proposalId} />
         </div>
       )}
 
       {page === 'results' && (
-        <div style={{ backgroundColor: 'white', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-          <button onClick={() => setPage('home')} style={{ color: '#3b82f6', marginBottom: '1rem', background: 'none', border: 'none', cursor: 'pointer' }}>
+        <div style={{ backgroundColor: 'var(--surface)', padding: '1.5rem', borderRadius: '0.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+          <button onClick={() => setPage('home')} className="detail-back">
             ← 返回首页
           </button>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>结果 - 提案 #{proposalId}</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '1rem' }}>结果 - 提案 #{proposalId}</h2>
           <Results proposalId={proposalId} />
         </div>
       )}

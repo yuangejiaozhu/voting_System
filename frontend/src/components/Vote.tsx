@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { ethers } from 'ethers'
 import { Identity } from '@semaphore-protocol/identity'
 
-const VOTING_ADDRESS = '0x4926480D2Fe02cEc8dbF3E9D98b3c2eF0A3a9278'
+const VOTING_ADDRESS = '0x81620fF38807e55c59E7d4ccC18657F8013F08fA'
 const VOTING_ABI = [
   "function getProposal(uint256) view returns (uint256 id, address creator, string description, string[] options, uint256 endTime, uint256 groupId, uint256 voteCount)",
   "function joinProposal(uint256 proposalId, uint256 identityCommitment) external",
@@ -37,7 +37,7 @@ export default function Vote({ proposalId }: { proposalId: number }) {
     }
   }, [])
 
-  // 检查是否已投票（从 localStorage）
+  // 检查是否已投票（localStorage）
   useEffect(() => {
     if (proposalId && identity) {
       const votedKey = `voted_${proposalId}_${identity.commitment.toString()}`
@@ -119,44 +119,22 @@ export default function Vote({ proposalId }: { proposalId: number }) {
       // 2. 提交投票（简化版，跳过 ZK 证明）
       setMessage('正在提交投票...')
       
+      // 用 identity commitment 作为 nullifier（防止重复投票）
+      const nullifier = identity.commitment.toString()
+      
       const tx2 = await contract.castVote(
         proposalId,
         selectedOption,
-        Math.floor(Math.random() * 1000000), // nullifier
-        3, // merkleTreeDepth
-        12345, // merkleTreeRoot
-        [1, 2, 3, 4, 5, 6, 7, 8] // points
+        nullifier, // 使用 identity commitment
+        3, // merkleTreeDepth (简化)
+        12345, // merkleTreeRoot (简化)
+        [1, 2, 3, 4, 5, 6, 7, 8] // points (简化)
       )
       
       await tx2.wait()
       
       // 记录已投票（localStorage）
       localStorage.setItem(votedKey, 'true')
-      
-      setHasVoted(true)
-      setMessage('投票成功！（简化版，已跳过 ZK 证明)')
-      fetchProposal() // 刷新票数
-    } catch (error: any) {
-      console.error('投票失败:', error)
-      setMessage('投票失败: ' + (error.reason || error.message))
-    }
-    setIsLoading(false)
-  }
-      }
-
-      // 2. 提交投票（简化版，跳过 ZK 证明）
-      setMessage('正在提交投票...')
-      
-      const tx2 = await contract.castVote(
-        proposalId,
-        selectedOption,
-        Math.floor(Math.random() * 1000000), // nullifier
-        3, // merkleTreeDepth
-        12345, // merkleTreeRoot
-        [1, 2, 3, 4, 5, 6, 7, 8] // points
-      )
-      
-      await tx2.wait()
       
       setHasVoted(true)
       setMessage('投票成功！（简化版，已跳过 ZK 证明）')
@@ -184,7 +162,7 @@ export default function Vote({ proposalId }: { proposalId: number }) {
             const pct = total > 0 ? Math.round(v.count / total * 100) : 0
             return (
               <div key={i} style={{ position: 'relative', padding: '0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#f3f4f6', width: pct + '%', zIndex: 0 }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: '#f3f4f6', width: pct + '%' }} />
                 <div style={{ position: 'relative', zIndex: 1, display: 'flex', justifyContent: 'space-between' }}>
                   <span>{v.option}</span>
                   <span style={{ color: '#6b7280' }}>{v.count} 票 ({pct}%)</span>

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ethers } from 'ethers'
 
-const VOTING_ADDRESS = '0x4926480D2Fe02cEc8dbF3E9D98b3c2eF0A3a9278'
+const VOTING_ADDRESS = '0x81620fF38807e55c59E7d4ccC18657F8013F08fA'
 const VOTING_ABI = [
   {
     "inputs": [
